@@ -1,7 +1,6 @@
 #include "communication.h"
 #include "memory.h"
 #include "windows.h"
-#include "linux.h"
 #include "serial.h"
 #include "rendezvous.h"
 #include <Uefi.h>
@@ -24,7 +23,7 @@ VOID EFIAPI SmiRendezvousHook(UINT64 CpuIndex);
 EFI_STATUS EFIAPI SmiHandler(EFI_HANDLE dispatch, CONST VOID* context, VOID* buffer, UINTN* size)
 {
   GSmst2->SmmLocateProtocol(&gEfiSmmCpuProtocolGuid, NULL, (VOID**)&Cpu);
-
+    
   if (!EFI_ERROR(SetupWindows(Cpu, GSmst2)))
   {
       OS = TRUE;
@@ -34,12 +33,11 @@ EFI_STATUS EFIAPI SmiHandler(EFI_HANDLE dispatch, CONST VOID* context, VOID* buf
       }
   }
 
-
-  if (!EFI_ERROR(SetupLinux(Cpu, GSmst2)))
-  {
-      OS = TRUE;
-      // Linux hook not implemented yet
-  }
+  //if (!EFI_ERROR(SetupLinux(Cpu, GSmst2)))
+  //{
+  //    OS = TRUE;
+  //    // Linux hook not implemented yet
+  //}
 
   // Make sure we are not running into a cache side channel attack. When the system leaves SMM it might clear cache.
   //ClearCache();
@@ -68,13 +66,13 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE image, IN EFI_SYSTEM_TABLE* table)
 
   if (EFI_ERROR(gBS->LocateProtocol(&gEfiSmmBase2ProtocolGuid, 0, (void**)&SmmBase2)))
   {
-    SERIAL_PRINT("Failed to find SmmBase!\r\n");
+    SERIAL_PRINT("[ERROR] Failed to find SmmBase!\r\n");
     return EFI_SUCCESS;
   }
 
   if (EFI_ERROR(SmmBase2->GetSmstLocation(SmmBase2, &GSmst2)))
   {
-    SERIAL_PRINT("Failed to find smst!\r\n");
+    SERIAL_PRINT("[ERROR] Failed to find smst!\r\n");
     return EFI_SUCCESS;
   }
 
@@ -84,11 +82,11 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE image, IN EFI_SYSTEM_TABLE* table)
 
   if (EFI_ERROR(SetupMemory(GSmst2)))
   {
-    SERIAL_PRINT("Failed to setup memory\r\n");
+    SERIAL_PRINT("[ERROR] Failed to setup memory\r\n");
     return EFI_ERROR_MAJOR;
   }
 
-  SERIAL_PRINT("Handler registered!\r\n");
+  SERIAL_PRINT("[INFO] Handler registered!\r\n");
 
   return  EFI_SUCCESS;
 }

@@ -10,7 +10,6 @@
     memory.c
     string.c
     windows.c
-    linux.c
     communication.c
     serial.c
     cache.nasm

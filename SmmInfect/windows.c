@@ -2,6 +2,8 @@
 #include "compiler.h"
 #include "memory.h"
 #include "string.h"
+#include "serial.h"
+
 static UINT64 KernelCr3 = 0;
 static UINT64 KernelBase = 0;
 static UINT64 PsInitialSystemProcess;
@@ -135,7 +137,6 @@ UINT64 GetWindowsKernelBase()
     {
         return 0;
     }
-
     return KernelBase;
 }
 
@@ -145,13 +146,11 @@ UINT64 GetWindowsKernelCr3()
     {
         return 0;
     }
-
     return KernelCr3;
 }
 
 UINT64 GetWindowsProcessCr3(UINT64 eprocess)
 {
-    // _EPROCESS -> _KPROCESS -> 0x28;
     return ReadVirtual64(eprocess + 0x28, KernelCr3);
 }
 
@@ -212,10 +211,8 @@ EFI_STATUS SetupWindows(EFI_SMM_CPU_PROTOCOL* cpu, EFI_SMM_SYSTEM_TABLE2* smst)
     return EFI_SUCCESS;
 }
 
-// credits ekknod
 UINT64 GetWindowsEProcess(const char* process_name)
 {
-
     if (EFI_ERROR(SetupWindows(Cpu, GSmst2)))
     {
         return 0;
@@ -248,7 +245,6 @@ UINT64 GetWindowsEProcess(const char* process_name)
     return 0;
 }
 
-
 EFI_STATUS MemGetKernelCr3(UINT64* cr3)
 {
     if (cr3 == NULL)
@@ -267,7 +263,7 @@ EFI_STATUS MemGetKernelCr3(UINT64* cr3)
 
     if (rip < 0xffff800000000000) {
         return EFI_NOT_FOUND;
-    } 
+    }
 
     UINT64 kernel_entry = rip & ~(SIZE_2MB - 1);
 

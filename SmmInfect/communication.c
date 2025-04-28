@@ -6,12 +6,14 @@
 #include <Uefi.h>
 #include <Protocol/SmmCpu.h>
 #include <PiSmm.h>
+#include "serial.h"
 
 UINT64 SmiCountIndex = 0;
 
 UINT64 GetCommunicationProcess()
 {
-    return GetWindowsEProcess("SmiUM.exe");
+    UINT64 proc = GetWindowsEProcess("ricky.exe");
+    return proc;
 }
 
 EFI_STATUS PerformCommunication()
@@ -30,17 +32,16 @@ EFI_STATUS PerformCommunication()
     UINT64 cprocess = GetCommunicationProcess();
     if (cprocess)
     {
-        UINT64 base = GetWindowsBaseAddressModuleX64(cprocess, L"SmiUM.exe");
+        UINT64 base = GetWindowsBaseAddressModuleX64(cprocess, L"ricky.exe");
 
         if (base)
         {
-            UINT64 section = GetWindowsSectionBaseAddressX64(cprocess, base, (unsigned char*)".ZEPTA");
-            //UINT8* ReadVirtual(UINT64 address, UINT64 cr3, UINT8* buffer, UINT64 length);
-
+            UINT64 section = GetWindowsSectionBaseAddressX64(cprocess, base, (unsigned char*)".RICKY");
             if (section)
             {
                 SmmCommunicationProtocol protocol = { 0 };
                 ReadVirtual(section + 0b0, GetWindowsProcessCr3(cprocess), (UINT8*)&protocol, (UINT64)sizeof(SmmCommunicationProtocol));
+
                 if (protocol.magic != SMM_PROTOCOL_MAGIC)
                 {
                     return EFI_SUCCESS;
@@ -60,19 +61,21 @@ EFI_STATUS PerformCommunication()
                     return EFI_SUCCESS;
                 }
 
-                *(UINT64*)(TranslateVirtualToPhysical(GetWindowsProcessCr3(cprocess), section + SMI_COUNT_OFFSET)) = SmiCountIndex;
 
+                *(UINT64*)(TranslateVirtualToPhysical(GetWindowsProcessCr3(cprocess), section + SMI_COUNT_OFFSET)) = SmiCountIndex;
                 ReadVirtual(tbase + protocol.offset, GetWindowsProcessCr3(tprocess), protocol.read_buffer, protocol.read_size);
 
-                // Section starts at new frame and struct is not bigger then a page size. So we can get away with only translating one time
+                // Section starts at new frame and struct is not bigger than a page size. So we can get away with only translating one time
                 UINT64 temp = TranslateVirtualToPhysical(GetWindowsProcessCr3(cprocess), section + READ_BUFFER_OFFSET);
 
                 for (UINT64 i = 0; i < protocol.read_size; i++)
                 {
                     *(UINT8*)(temp + i) = protocol.read_buffer[i];
                 }
+
             }
         }
     }
+
     return EFI_SUCCESS;
 }
