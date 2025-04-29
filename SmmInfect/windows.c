@@ -1,5 +1,5 @@
+#include <Library/BaseLib.h>
 #include "windows.h"
-#include "compiler.h"
 #include "memory.h"
 #include "string.h"
 #include "serial.h"
@@ -137,6 +137,7 @@ UINT64 GetWindowsKernelBase()
     {
         return 0;
     }
+
     return KernelBase;
 }
 
@@ -146,11 +147,13 @@ UINT64 GetWindowsKernelCr3()
     {
         return 0;
     }
+
     return KernelCr3;
 }
 
 UINT64 GetWindowsProcessCr3(UINT64 eprocess)
 {
+    // _EPROCESS -> _KPROCESS -> 0x28;
     return ReadVirtual64(eprocess + 0x28, KernelCr3);
 }
 
@@ -211,8 +214,10 @@ EFI_STATUS SetupWindows(EFI_SMM_CPU_PROTOCOL* cpu, EFI_SMM_SYSTEM_TABLE2* smst)
     return EFI_SUCCESS;
 }
 
+// credits ekknod
 UINT64 GetWindowsEProcess(const char* process_name)
 {
+
     if (EFI_ERROR(SetupWindows(Cpu, GSmst2)))
     {
         return 0;
@@ -245,6 +250,7 @@ UINT64 GetWindowsEProcess(const char* process_name)
     return 0;
 }
 
+
 EFI_STATUS MemGetKernelCr3(UINT64* cr3)
 {
     if (cr3 == NULL)
@@ -257,11 +263,11 @@ EFI_STATUS MemGetKernelCr3(UINT64* cr3)
     Cpu->ReadSaveState(Cpu, sizeof(tempcr3), EFI_SMM_SAVE_STATE_REGISTER_CR3, GSmst2->CurrentlyExecutingCpu, (VOID*)&tempcr3);
     Cpu->ReadSaveState(Cpu, sizeof(rip), EFI_SMM_SAVE_STATE_REGISTER_RIP, GSmst2->CurrentlyExecutingCpu, (VOID*)&rip);
 
-    if (tempcr3 == READ_CR3() || (tempcr3 & 0xFFF) != 0) {
+    if (tempcr3 == AsmReadCr3() || (tempcr3 & 0xFFF) != 0) {
         return EFI_NOT_FOUND;
     }
 
-    if (rip < 0xffff800000000000) {
+    if (rip < 0xFFFF800000000000) {
         return EFI_NOT_FOUND;
     }
 
