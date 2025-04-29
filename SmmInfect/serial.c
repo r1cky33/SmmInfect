@@ -38,6 +38,16 @@ UINT8 m_BreakSet = 0;
 UINT16 m_port = 0;
 //--------------------------------------------------------------------------------------
 
+static inline void __outbyte(unsigned short port, unsigned char data) {
+    __asm__ volatile ("outb %0, %1" : : "a"(data), "Nd"(port));
+}
+
+static inline unsigned char __inbyte(unsigned short port) {
+    unsigned char value;
+    __asm__ volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
 /*
     Initialize the serial device hardware.
 */
@@ -52,15 +62,15 @@ VOID SerialPortInitialize(UINT16 Port, UINTN Baudrate)
 
     // Set communications format
     UINT8 OutputData = (UINT8)((DLAB << 7) | (m_BreakSet << 6) | (m_Parity << 3) | (m_Stop << 2) | Data);
-    OUTBYTE((UINTN)(Port + LCR_OFFSET), OutputData);
+    __outbyte((UINTN)(Port + LCR_OFFSET), OutputData);
 
     // Configure baud rate
-    OUTBYTE((UINTN)(Port + BAUD_HIGH_OFFSET), (UINT8)(Divisor >> 8));
-    OUTBYTE((UINTN)(Port + BAUD_LOW_OFFSET), (UINT8)(Divisor & 0xff));
+    __outbyte((UINTN)(Port + BAUD_HIGH_OFFSET), (UINT8)(Divisor >> 8));
+    __outbyte((UINTN)(Port + BAUD_LOW_OFFSET), (UINT8)(Divisor & 0xff));
 
     // Switch back to bank 0
     OutputData = (UINT8)((~DLAB << 7) | (m_BreakSet << 6) | (m_Parity << 3) | (m_Stop << 2) | Data);
-    OUTBYTE((UINTN)(Port + LCR_OFFSET), OutputData);
+    __outbyte((UINTN)(Port + LCR_OFFSET), OutputData);
 }
 //--------------------------------------------------------------------------------------
 /*
@@ -77,7 +87,7 @@ VOID SerialPortWrite(UINT16 Port, UINT8 Data)
 
     } while ((Status & LSR_TXRDY) == 0);
 
-    OUTBYTE(Port, Data);
+    __outbyte(Port, Data);
 }
 //--------------------------------------------------------------------------------------
 /*

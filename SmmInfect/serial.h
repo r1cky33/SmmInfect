@@ -4,7 +4,7 @@
 
 // Credits: Cr4sh
 
-#define SERIAL_INIT() SerialPortInitialize(0x3F8, 9600)
+#define SERIAL_INIT() SerialPortInitialize(0x3F8, 115200)
 #define SERIAL_PRINT(x, ...) DbgMsg(__FILE__, __LINE__, x, ##__VA_ARGS__)
 
 

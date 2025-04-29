@@ -3,6 +3,7 @@
 #include "windows.h"
 #include "serial.h"
 #include "rendezvous.h"
+
 #include <Uefi.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
@@ -10,6 +11,7 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Protocol/SmmCpu.h>
+
 #define RENDEZVOUS_EXPERIMENTAL 0
 
 static EFI_SMM_BASE2_PROTOCOL* SmmBase2;
@@ -22,6 +24,8 @@ VOID EFIAPI SmiRendezvousHook(UINT64 CpuIndex);
 
 EFI_STATUS EFIAPI SmiHandler(EFI_HANDLE dispatch, CONST VOID* context, VOID* buffer, UINTN* size)
 {
+  SERIAL_PRINT("[INFO] SMI-Handler Called!\r\n");
+
   GSmst2->SmmLocateProtocol(&gEfiSmmCpuProtocolGuid, NULL, (VOID**)&Cpu);
     
   if (!EFI_ERROR(SetupWindows(Cpu, GSmst2)))
@@ -63,6 +67,8 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE image, IN EFI_SYSTEM_TABLE* table)
   gST = table;
 
   SERIAL_INIT();
+
+  SERIAL_PRINT("[INFO] SmmInfect loading...\r\n");
 
   if (EFI_ERROR(gBS->LocateProtocol(&gEfiSmmBase2ProtocolGuid, 0, (void**)&SmmBase2)))
   {
