@@ -24,3 +24,10 @@ int WcsCmpi(const unsigned short* str1, const unsigned short* str2)
     }
     return *(const unsigned short*)str1 - *(const unsigned short*)str2;
 }
+
+int strlen(const char* str)
+{
+    const char* orig = str;
+    while(*(str++));
+    return (int)(str - orig - 1);
+}

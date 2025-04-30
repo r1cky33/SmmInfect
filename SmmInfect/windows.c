@@ -174,10 +174,14 @@ EFI_STATUS SetupWindows(EFI_SMM_CPU_PROTOCOL* cpu, EFI_SMM_SYSTEM_TABLE2* smst)
         return EFI_SUCCESS;
     }
 
+    SERIAL_PRINT("[INFO] Setting up Windows...\r\n");
+
     if (cpu == NULL || smst == NULL)
     {
+        SERIAL_PRINT("[ERROR] cpu or smst were invalid\ŗ\n");
         return EFI_INVALID_PARAMETER;
     }
+
     Cpu = cpu;
     GSmst2 = smst;
 
@@ -187,11 +191,15 @@ EFI_STATUS SetupWindows(EFI_SMM_CPU_PROTOCOL* cpu, EFI_SMM_SYSTEM_TABLE2* smst)
         return EFI_NOT_FOUND;
     }
 
+    SERIAL_PRINT("[INFO] KernelCr3: 0x%x\r\n", KernelCr3);
+
     status = MemGetKernelBase(&KernelBase);
     if (EFI_ERROR(status))
     {
         return EFI_NOT_FOUND;
     }
+
+    SERIAL_PRINT("[INFO] KernelBase: 0x%x\r\n", KernelBase);
 
     PsInitialSystemProcess = ZGetWindowsProcAddressX64(KernelCr3, KernelBase, "PsInitialSystemProcess");
     if (PsInitialSystemProcess == 0)
@@ -209,6 +217,8 @@ EFI_STATUS SetupWindows(EFI_SMM_CPU_PROTOCOL* cpu, EFI_SMM_SYSTEM_TABLE2* smst)
     {
         return EFI_NOT_FOUND;
     }
+
+    SERIAL_PRINT("[INFO] Successfully setup Windows\r\n");
 
     SetupDone = TRUE;
     return EFI_SUCCESS;
@@ -250,6 +260,17 @@ UINT64 GetWindowsEProcess(const char* process_name)
     return 0;
 }
 
+  static inline UINT64 read_cr3(VOID) {
+      UINT64 cr3;
+      __asm__ __volatile__ (
+          "mov %%cr3, %0" 
+          : "=r" (cr3)
+          :
+          : "memory"
+      );
+      return cr3;
+  }
+
 
 EFI_STATUS MemGetKernelCr3(UINT64* cr3)
 {
@@ -262,6 +283,11 @@ EFI_STATUS MemGetKernelCr3(UINT64* cr3)
     UINT64 tempcr3;
     Cpu->ReadSaveState(Cpu, sizeof(tempcr3), EFI_SMM_SAVE_STATE_REGISTER_CR3, GSmst2->CurrentlyExecutingCpu, (VOID*)&tempcr3);
     Cpu->ReadSaveState(Cpu, sizeof(rip), EFI_SMM_SAVE_STATE_REGISTER_RIP, GSmst2->CurrentlyExecutingCpu, (VOID*)&rip);
+
+    SERIAL_PRINT("[INFO] tempcr3: 0x%x\r\n", tempcr3);
+    SERIAL_PRINT("[INFO] rip: 0x%x\r\n", rip);
+    SERIAL_PRINT("[INFO] CR3: 0x%x\r\n", read_cr3());
+    SERIAL_PRINT("[INFO] AsmReadCr3: 0x%x\r\n", AsmReadCr3());
 
     if (tempcr3 == AsmReadCr3() || (tempcr3 & 0xFFF) != 0) {
         return EFI_NOT_FOUND;
@@ -278,14 +304,19 @@ EFI_STATUS MemGetKernelCr3(UINT64* cr3)
         UINT64 address = kernel_entry - (i * SIZE_2MB);
         UINT64 address2 = kernel_entry + (i * SIZE_2MB);
 
+        SERIAL_PRINT("[INFO] Reading Virtual 0x%x\r\n", address);
         if (ReadVirtual16(address, tempcr3) == 23117)
         {
+            SERIAL_PRINT("[INFO] Read\r\n");
             *cr3 = tempcr3;
             return EFI_SUCCESS;
         }
 
+    
+        SERIAL_PRINT("[INFO] Reading Virtual 0x%x\r\n", address2);
         if (ReadVirtual16(address2, tempcr3) == 23117)
         {
+            SERIAL_PRINT("[INFO] Read\r\n");
             *cr3 = tempcr3;
             return EFI_SUCCESS;
         }

