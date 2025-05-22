@@ -20,8 +20,6 @@
 
 // Definitions
 
-#define SERIAL_PRINT(fmt, ...)  do { SerialPrintf("\033[0;37m(D) " fmt "\033[0;39;49m", ##__VA_ARGS__); } while(0)
-
 #define SERIAL_BAUDRATE 115200
 #define SERIAL_PORT_0 0x3F8
 
