@@ -9,13 +9,10 @@ fi
 # Prepare EDK2 base
 pushd edk2
 make -C BaseTools
-#export WORKSPACE="$(pwd)"
-#export PACKAGES_PATH="$(pwd)"
-#export EDK_TOOLS_PATH="$(pwd)/BaseTools"
 . edksetup.sh
 popd
 
-# Copy Plouton-related files and changes
+# Copy SmmInfect-related files and changes
 cp -r SmmInfect/ edk2/
 cp -r edk2-overrides/* edk2
 
@@ -29,7 +26,7 @@ bear -o ../compile_commands.json build -DSMM_REQUIRE
 #build -DSMM_REQUIRE
 popd
 
-# Clean-up Plouton-related changes
+# Clean-up SmmInfect-related changes
 # --> Not everything! edk2-overrides need to be reverted using git:
 #                     run "git restore ." (inside edk2 directory)
 #                     to get completely clean state 
