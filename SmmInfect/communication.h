@@ -1,29 +1,34 @@
-#pragma once 
-#include <Uefi.h>
+#pragma once
 #include <PiSmm.h>
 #include <Protocol/SmmCpu.h>
+#include <Uefi.h>
 #define SMM_PROTOCOL_MAGIC 'i'
-#define MAGIC_OFFSET 0
-#define PROCESS_OFFSET 1
-#define MODULE_OFFSET 31
-#define MEMORY_OFFSET 91
-#define READ_SIZE_OFFSET 99
-#define READ_BUFFER_OFFSET 107
-#define SMI_COUNT_OFFSET 137
 
+#define CMD_READ_VIRTUAL_MEMORY 0x10
+#define CMD_GET_MODULE_BASE 0x20
 
-#pragma pack(1) // Ensure that alignment is 1-byte
-typedef struct _SmmCommunicationProtocol
-{
-    UINT8 magic; // offset 0
-    UINT8 process_name[30]; // offset 1
-    UINT16 module_name[30]; // offset 31
-    UINT64 offset; // offset 91
-    UINT64 read_size; // offset 99
-    UINT8 read_buffer[30]; // offset 107
-    UINT64 smi_count; // offset 137
-} SmmCommunicationProtocol, * PSmmCommunicationProtocol; // size 145
-#pragma pack() // reset
+#pragma pack(1)
+typedef struct _SmmCommunicationProtocol {
+    UINT8 magic;   // offset 0
+    UINT8 command; // offset 1
+    union {
+        // For CMD_READ_VIRTUAL_MEMORY
+        struct {
+            UINT8 process_name[30]; // ASCII target process name
+            UINT64 address;         // Absolute address to read
+            UINT64 size;            // Read size
+        } read;
+
+        // For CMD_GET_MODULE_BASE
+        struct {
+            UINT8 target_process[30]; // ASCII process name
+            UINT16 target_module[30]; // UTF-16 module name (like original)
+        } module;
+    };
+    UINT8 buffer[512]; // Enlarged read buffer
+    UINT64 smi_count;  // SMI counter
+} SmmCommunicationProtocol;
+#pragma pack()
 
 UINT64 GetCommunicationProcess();
 EFI_STATUS PerformCommunication();
